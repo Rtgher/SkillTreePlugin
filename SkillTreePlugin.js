@@ -94,8 +94,10 @@ Window_KnowledgeTree.prototype.constructor = Window_KnowledgeTree
 Window_KnowledgeTree.prototype.initialize = function (x, y, width, height) {
   Window_Base.prototype.initialize.call(this, x, y, width, height)
   this._actor = null // The actor whose skills are displayed
+  this._selectedSkill = null; // Currently selected skill
   this.refresh()
   this.createBackButton();
+  this.createActorColumn(); // Initialize the actor selection column
 }
 
 Window_KnowledgeTree.prototype.setActor = function (actor) {
@@ -160,6 +162,38 @@ Window_KnowledgeTree.prototype.onBackButton = function() {
 Window_KnowledgeTree.prototype.processCancel = function() {
     SoundManager.playCancel();
     this.onBackButton(); // Trigger the back button functionality
+};
+
+Window_KnowledgeTree.prototype.createActorColumn = function() {
+    this._actorButtons = [];
+    let x = 0;
+    let y = 0;
+    let buttonWidth = 200;
+    let buttonHeight = 48;
+
+    $gameParty.members().forEach((actor, index) => {
+        let button = new Sprite_Button();
+        button.bitmap = new Bitmap(buttonWidth, buttonHeight);
+        button.bitmap.drawText(actor.name(), 0, 0, buttonWidth, buttonHeight, 'center');
+        button.x = x;
+        button.y = y + index * (buttonHeight + 10);
+        button.setClickHandler(() => this.selectActor(actor));
+        this.addChild(button);
+        this._actorButtons.push(button);
+    });
+};
+
+Window_KnowledgeTree.prototype.selectActor = function(actor) {
+    this._actor = actor;
+    this.refreshSkillsColumn();
+    this.refreshPrerequisitesColumn(); // Clear or reset prerequisites column
+};
+
+Window_KnowledgeTree.prototype.refreshActorColumn = function() {
+    if (this._actorButtons) {
+        this._actorButtons.forEach(button => this.removeChild(button));
+    }
+    this.createActorColumn();
 };
 
 /*
