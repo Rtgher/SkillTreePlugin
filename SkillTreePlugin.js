@@ -91,3 +91,23 @@ Scene_Skill.prototype.createSkillTreeWindow = function() {
     this._skillTreeWindow = new Window_SkillTree(wx, wy, ww, wh);
     this.addWindow(this._skillTreeWindow);
 };
+
+/*
+ * Skill Learning
+ */
+(function() {
+    var _Game_Actor_learnSkill = Game_Actor.prototype.learnSkill;
+    Game_Actor.prototype.learnSkill = function(skillId) {
+        if (this.canLearnSkill(skillId)) {
+            _Game_Actor_learnSkill.call(this, skillId);
+        }
+    };
+
+    Game_Actor.prototype.canLearnSkill = function(skillId) {
+        var prerequisites = SkillTree.prerequisites[skillId];
+        if (!prerequisites) return true; // No prerequisites, can learn directly
+        return prerequisites.every(function(prerequisiteId) {
+            return this.isLearnedSkill(prerequisiteId);
+        }, this);
+    };
+})();
