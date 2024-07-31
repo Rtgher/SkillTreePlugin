@@ -139,6 +139,13 @@ Window_KnowledgeTree.prototype.createBackButton = function() {
     this._backButton = new Sprite_Button();
     this._backButton.bitmap = new Bitmap(200, 48); // Set button size
     this._backButton.bitmap.drawText('Back', 0, 0, 200, 48, 'center'); // Draw "Back" text
+
+     // Draw border
+     this._backButton.bitmap.fillRect(0, 0, 200, 2, '#000001'); // Top border
+     this._backButton.bitmap.fillRect(0, 46, 200, 2, '#000001'); // Bottom border
+     this._backButton.bitmap.fillRect(0, 0, 2, 48, '#000910'); // Left border
+     this._backButton.bitmap.fillRect(198, 0, 2, 48, '#000001'); // Right border
+
     this._backButton.x = Graphics.boxWidth - 220; // Positioning
     this._backButton.y = Graphics.boxHeight - 60; // Positioning
     this._backButton.setClickHandler(this.onBackButton.bind(this)); // Set the click handler
