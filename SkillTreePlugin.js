@@ -338,32 +338,6 @@ Window_KnowledgeTree.prototype.refreshPrerequisitesColumn = function() {
     }
 };
 
-
-/*
- * Scene Integration
- */
-
-var _Scene_Skill_create = Scene_Skill.prototype.create
-Scene_Skill.prototype.create = function () {
-  _Scene_Skill_create.call(this)
-  this.createKnowledgeTreeWindow()
-  this.refreshActor()
-}
-
-Scene_Skill.prototype.createKnowledgeTreeWindow = function () {
-  var wx = 0
-  var wy = this._helpWindow.height
-  var ww = Graphics.boxWidth
-  var wh = Graphics.boxHeight - wy
-  this._knowledgeTreeWindow = new Window_KnowledgeTree(wx, wy, ww, wh)
-  this.addWindow(this._knowledgeTreeWindow)
-}
-
-Scene_Skill.prototype.refreshActor = function () {
-  var actor = this.actor()
-  this._knowledgeTreeWindow.setActor(actor)
-}
-
 /*
  * Skill Learning
  */
