@@ -19,6 +19,10 @@
 
 var SkillTree = SkillTree || {}
 var KnowledgeTreeWindowName = 'Spellbook' // Variable to hold the window name
+var ButtonBorderColor = '#FFFFFF';
+
+var buttonWidth = 200;
+var buttonHeight = 48;
 
 ;(function () {
   // Hook into Scene_Boot's start method to ensure the game data is fully loaded
@@ -95,7 +99,9 @@ Window_KnowledgeTree.prototype.initialize = function (x, y, width, height) {
   Window_Base.prototype.initialize.call(this, x, y, width, height)
   this._actor = null // The actor whose skills are displayed
   this._selectedSkill = null; // Currently selected skill
-  this.refresh()
+  this._focusedColumn = 0; // 0: Actor, 1: Skills, 2: Prerequisites
+  this._actorIndex = 0;
+  this._skillIndex = 0;
   this.createBackButton();
   this.createActorColumn(); // Initialize the actor selection column
 }
@@ -107,47 +113,23 @@ Window_KnowledgeTree.prototype.setActor = function (actor) {
   }
 }
 
-Window_KnowledgeTree.prototype.refresh = function () {
-  this.contents.clear()
-  if (this._actor) {
-    this.drawKnowledgeTree()
-  }
-}
-
-Window_KnowledgeTree.prototype.drawKnowledgeTree = function () {
-  var skills = this._actor.skills()
-  var y = 0
-
-  for (var i = 0; i < skills.length; i++) {
-    var skill = skills[i]
-    var skillId = skill.id
-    var prerequisites = SkillTree.prerequisites[skillId] || []
-    var skillName = skill.name
-
-    var prereqNames = prerequisites
-      .map(function (prereqId) {
-        var prereqSkill = $dataSkills[prereqId]
-        return prereqSkill ? prereqSkill.name : ''
-      })
-      .join(', ')
-
-    var text = skillName + ' (' + prereqNames + ')'
-    this.drawText(text, 0, y, this.contents.width, 'left')
-    y += this.lineHeight()
-  }
-}
+Window_KnowledgeTree.prototype.refresh = function() {
+    this.refreshActorColumn(); // Refresh actor buttons
+    this.refreshSkillsColumn(); // Clear skill buttons
+    this.refreshPrerequisitesColumn(); // Clear prerequisite texts
+};
 
 Window_KnowledgeTree.prototype.createBackButton = function() {
     this._backButton = new Sprite_Button();
-    this._backButton.bitmap = new Bitmap(200, 48); // Set button size
-    this._backButton.bitmap.drawText('Back', 0, 0, 200, 48, 'center'); // Draw "Back" text
+    this._backButton.bitmap = new Bitmap(buttonWidth, buttonHeight); // Set button size
+    this._backButton.bitmap.drawText('Back', 0, 0, buttonWidth, buttonHeight, 'center'); // Draw "Back" text
 
-     // Draw border
-     this._backButton.bitmap.fillRect(0, 0, 200, 2, '#FFFFFF'); // Top border
-     this._backButton.bitmap.fillRect(0, 46, 200, 2, '#FFFFFF'); // Bottom border
-     this._backButton.bitmap.fillRect(0, 0, 2, 48, '#FFFFFF'); // Left border
-     this._backButton.bitmap.fillRect(198, 0, 2, 48, '#FFFFFF'); // Right border
-
+    // Draw border
+    this._backButton.bitmap.fillRect(0, 0, buttonWidth, 2, ButtonBorderColor); // Top border
+    this._backButton.bitmap.fillRect(0, 46, buttonWidth, 2, ButtonBorderColor); // Bottom border
+    this._backButton.bitmap.fillRect(0, 0, 2, buttonHeight, ButtonBorderColor); // Left border
+    this._backButton.bitmap.fillRect(198, 0, 2, buttonHeight, ButtonBorderColor); // Right border
+    
     this._backButton.x = Graphics.boxWidth - 220; // Positioning
     this._backButton.y = Graphics.boxHeight - 60; // Positioning
     this._backButton.setClickHandler(this.onBackButton.bind(this)); // Set the click handler
@@ -164,20 +146,88 @@ Window_KnowledgeTree.prototype.processCancel = function() {
     this.onBackButton(); // Trigger the back button functionality
 };
 
+/**
+ * Button Movement code:
+ */
+ Window_KnowledgeTree.prototype.update = function() {
+    Window_Base.prototype.update.call(this);
+    this.processHandling();
+    this.updateFocus();
+};
+
+Window_KnowledgeTree.prototype.processHandling = function() {
+    if (Input.isTriggered('down') || Input.isTriggered('s')) {
+        this.moveFocus(1);
+    } else if (Input.isTriggered('up') || Input.isTriggered('w')) {
+        this.moveFocus(-1);
+    } else if (Input.isTriggered('ok') || Input.isTriggered('ok')) {
+        this.triggerAction();
+    }
+};
+
+Window_KnowledgeTree.prototype.moveFocus = function(direction) {
+    if (this._focusedColumn === 0) {
+        this.changeActorFocus(direction);
+    } else if (this._focusedColumn === 1) {
+        this.changeSkillFocus(direction);
+    }
+    // Note: No navigation for prerequisites, as they are not interactable.
+};
+
+Window_KnowledgeTree.prototype.changeActorFocus = function(direction) {
+    this._actorIndex = (this._actorIndex + direction).clamp(0, this._actorButtons.length - 1);
+    this.updateFocus();
+};
+
+Window_KnowledgeTree.prototype.changeSkillFocus = function(direction) {
+    this._skillIndex = (this._skillIndex + direction).clamp(0, this._skillButtons.length - 1);
+    this.updateFocus();
+};
+
+Window_KnowledgeTree.prototype.updateFocus = function() {
+    this._actorButtons.forEach((button, index) => {
+        button.bitmap.clear();
+        if (index === this._actorIndex && this._focusedColumn === 0) {
+            button.bitmap.fillRect(0, 0, buttonWidth, buttonHeight, '#aaaaaa'); // Focus color
+            button._isFocused = true;
+        }else
+        {
+            button._isFocused = false;
+        }
+        button.update();
+    });
+
+    this._skillButtons.forEach((button, index) => {
+        button.bitmap.clear();
+        if (index === this._skillIndex && this._focusedColumn === 1) {
+            button.bitmap.fillRect(0, 0, buttonWidth, buttonHeight, '#aaaaaa'); // Focus color
+            button._isFocused = true;
+        }else
+        {
+            button._isFocused = false;
+        }
+        button.update();
+    });
+};
+
+Window_KnowledgeTree.prototype.triggerAction = function() {
+    if (this._focusedColumn === 0) {
+        this._actorButtons[this._actorIndex].callClickHandler();
+    } else if (this._focusedColumn === 1) {
+        this._skillButtons[this._skillIndex].callClickHandler();
+    }
+};
+
+/**
+ * Windows Actor Column
+ */
 Window_KnowledgeTree.prototype.createActorColumn = function() {
     this._actorButtons = [];
     let x = 0;
     let y = 0;
-    let buttonWidth = 200;
-    let buttonHeight = 48;
 
     $gameParty.members().forEach((actor, index) => {
-        let button = new Sprite_Button();
-        button.bitmap = new Bitmap(buttonWidth, buttonHeight);
-        button.bitmap.drawText(actor.name(), 0, 0, buttonWidth, buttonHeight, 'center');
-        button.x = x;
-        button.y = y + index * (buttonHeight + 10);
-        button.setClickHandler(() => this.selectActor(actor));
+        let button = createButton(actor.name(), buttonWidth, buttonHeight, x, y + index * (buttonHeight + 10), () => this.selectActor(actor));
         this.addChild(button);
         this._actorButtons.push(button);
     });
@@ -195,6 +245,99 @@ Window_KnowledgeTree.prototype.refreshActorColumn = function() {
     }
     this.createActorColumn();
 };
+
+function createButton(text, buttonWidth, buttonHeight, x, y, clickHandler) {
+    let button = new Sprite_Button();
+    button.bitmap = new Bitmap(buttonWidth, buttonHeight);
+    button.bitmap.drawText(text, 0, 0, buttonWidth, buttonHeight, 'center');
+    button.x = x;
+    button.y = y;
+
+    // Draw border
+    button.bitmap.fillRect(0, 0, buttonWidth, 2, ButtonBorderColor); // Top border
+    button.bitmap.fillRect(0, buttonHeight - 2, buttonWidth, 2, ButtonBorderColor); // Bottom border
+    button.bitmap.fillRect(0, 0, 2, buttonHeight, ButtonBorderColor); // Left border
+    button.bitmap.fillRect(buttonWidth - 2, 0, 2, buttonHeight, ButtonBorderColor); // Right border
+
+    // Pulsating effect
+    button._pulseValue = 0;
+    button._pulseDirection = 1;
+    button._isFocused=false;
+    button.update = function() {
+        if (button._isFocused) {
+            this._pulseValue += this._pulseDirection * 0.05;
+            if (this._pulseValue > 1 || this._pulseValue < 0) {
+                this._pulseDirection *= -1;
+                this._pulseValue = Math.max(0, Math.min(1, this._pulseValue));
+            }
+            const color = (Math.floor(128 + 127 * this._pulseValue)).toString(16).padStart(2, '0');
+            this.bitmap.fillRect(0, 0, buttonWidth, buttonHeight, `#${color}${color}${color}`);
+        }
+        this.bitmap.drawText(text, 0, 0, buttonWidth, buttonHeight, 'center');
+    };
+
+    button.setClickHandler(clickHandler);
+    return button;
+}
+/**
+ * Windows Skill Column
+ */
+Window_KnowledgeTree.prototype.createSkillsColumn = function() {
+    this._skillButtons = [];
+    let x = 220;
+    let y = 0;
+
+    this._actor.skills().forEach((skill, index) => {
+        let button = createButton(skill.name, buttonWidth, buttonHeight, x, y + index * (buttonHeight + 10), () => this.selectSkill(skill));
+        this.addChild(button);
+        this._skillButtons.push(button);
+    });
+};
+
+Window_KnowledgeTree.prototype.selectSkill = function(skill) {
+    this._selectedSkill = skill;
+    this.refreshPrerequisitesColumn();
+};
+
+Window_KnowledgeTree.prototype.refreshSkillsColumn = function() {
+    if (this._skillButtons) {
+        this._skillButtons.forEach(button => this.removeChild(button));
+    }
+    this.createSkillsColumn();
+};
+
+/**
+ * Window Pre-requisite Column
+ */
+Window_KnowledgeTree.prototype.createPrerequisitesColumn = function() {
+    this._prerequisiteTexts = [];
+    let x = 440;
+    let y = 0;
+
+    let prerequisites = SkillTree.prerequisites[this._selectedSkill.id] || [];
+    prerequisites.forEach((prereqId, index) => {
+        let prereqSkill = $dataSkills[prereqId];
+        if (prereqSkill) {
+            let text = new Sprite();
+            text.bitmap = new Bitmap(200, 48);
+            text.bitmap.drawText(prereqSkill.name, 0, 0, 200, 48, 'center');
+            text.x = x;
+            text.y = y + index * 58;
+            this.addChild(text);
+            this._prerequisiteTexts.push(text);
+        }
+    });
+};
+
+Window_KnowledgeTree.prototype.refreshPrerequisitesColumn = function() {
+    if (this._prerequisiteTexts) {
+        this._prerequisiteTexts.forEach(text => this.removeChild(text));
+    }
+    if (this._selectedSkill) {
+        this.createPrerequisitesColumn();
+    }
+};
+
 
 /*
  * Scene Integration
