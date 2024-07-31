@@ -5,9 +5,8 @@
  * @param KnowledgeTreeWindowName
  * @text New Window Name
  * @desc Use this parameter to customize the name of the new window created.
- * @type number
- * @min 0
- * @default 10
+ * @type string
+ * @default Spellbook
  *
  * @help
  * This plugin will add a pre-requisite to your skills.
@@ -15,6 +14,8 @@
  * To do so, you need to go into your skills window, in the RPG Maker resource manager,
  * select your skill, and add the pre-requisites in the following format within the Note section:
  * <Prerequisites: 1, 2>
+ * 
+ * Along with the skill tree pre-requisite, a new window should now appear to showcase the pre-requisites of the skills.
  */
 
 var SkillTree = SkillTree || {}
