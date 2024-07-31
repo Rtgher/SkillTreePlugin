@@ -1,8 +1,8 @@
 /*:
- * @plugindesc A brief description of what your plugin does.
+ * @plugindesc Adds a tree-like dependency to skills, along with a window to see the skills.
  * @author RtGherman
  *
- * @param ExampleParam
+ * @param SkillTree
  * @text Example Parameter
  * @desc Description of what this parameter does.
  * @type number
@@ -10,39 +10,57 @@
  * @default 10
  *
  * @help
- * Detailed explanation of the plugin's functionality, including how to use it.
+ * This plugin will add a pre-requisite to your skills. 
+ * You can define pre-requisites for a skill in the 'Note' section of your skill window.
+ * To do so, you need to go into your skills window, in the RPG Maker resource manager, 
+ * select your skill, and add the pre-requisites in the following format within the Note section:
+ * <Prerequisites: 1, 2>
  */
 
-(function() {
-    // Your plugin code here
-    var parameters = PluginManager.parameters('MyCustomPlugin');
-    var exampleParam = Number(parameters['ExampleParam'] || 10);
+var SkillTree = SkillTree || {};
 
-    // Plugin functionality
-    // Example: Add a command to the menu
-    var _Scene_Menu_create = Scene_Menu.prototype.create;
-    Scene_Menu.prototype.create = function() {
-        _Scene_Menu_create.call(this);
-        // Your code to add new functionality
+(function() {
+
+    // Hook into Scene_Boot's start method to ensure the game data is fully loaded
+    var _Scene_Boot_start = Scene_Boot.prototype.start;
+    Scene_Boot.prototype.start = function() {
+        _Scene_Boot_start.call(this);
+        StartPlugin();
     };
 
 })();
 
-// Example structure for skill prerequisites
-var SkillTree = SkillTree || {};
+function StartPlugin() {
+    var parameters = PluginManager.parameters('MyCustomPlugin');
 
-SkillTree.prerequisites = {
-    1: [0], // Skill ID 1 requires Skill ID 0
-    2: [1], // Skill ID 2 requires Skill ID 1
-    3: [1], // Skill ID 3 requires Skill ID 1
-    4: [2, 3], // Skill ID 4 requires both Skill IDs 2 and 3
-    // Add more skills and their prerequisites as needed
+    SetUpSkillTree(SkillTree);
+
+    // Plugin functionality
+    // Example: Add a command to the menu
+    var _Scene_Menu_create = Scene_Menu.prototype.create;
+    Scene_Menu.prototype.create = function () {
+        _Scene_Menu_create.call(this);
+    };
+}
+
+function SetUpSkillTree(SkillTree) {
+    SkillTree.prerequisites = {};
+
+    $dataSkills.forEach(function(skill) {
+        if (skill && skill.note) {
+            var match = skill.note.match(/<Prerequisites:\s*(.+)>/i);
+            if (match) {
+                var prereqList = match[1].split(',').map(Number);
+                SkillTree.prerequisites[skill.id] = prereqList;
+            }
+        }
+    });
 };
+
 
 /*
  * Skill Tree Window
  */
-
 function Window_SkillTree() {
     this.initialize.apply(this, arguments);
 }
