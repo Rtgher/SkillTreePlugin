@@ -95,6 +95,7 @@ Window_KnowledgeTree.prototype.initialize = function (x, y, width, height) {
   Window_Base.prototype.initialize.call(this, x, y, width, height)
   this._actor = null // The actor whose skills are displayed
   this.refresh()
+  this.createBackButton();
 }
 
 Window_KnowledgeTree.prototype.setActor = function (actor) {
